@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ubuntu-deployment
+  labels:
+    app: ubuntu-server
+spec:
+  replicas: 3  # Number of replicas
+  selector:
+    matchLabels:
+      app: ubuntu-server
+  template:
+    metadata:
+      labels:
+        app: ubuntu-server
+    spec:
+      containers:
+      - name: ubuntu-container
+        image: artifactory.domain.com/repo-name/ubuntu:20.04
+        command: ["/bin/bash", "-c", "while true; do echo hello world; sleep 10; done"]
+        ports:
+        - containerPort: 8080  # Example port, you can change this
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+        securityContext:
+          runAsUser: 0
+          #runAsGroup: 3000
+          capabilities:
+            add: ["NET_ADMIN", "SYS_TIME"]
+          allowPrivilegeEscalation: true
+      imagePullSecrets:
+      - name: rajesingh-artifactory-secret  # Replace with your secret name
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: ubuntu-service
+spec:
+  selector:
+    app: ubuntu-server
+  ports:
+    - name: ubuntu-tcp-80-port
+      protocol: TCP
+      port: 80
+      targetPort: 8080  # Matches the containerPort above
+    - name: ubuntu-udp-53-port
+      protocol: UDP
+      port: 53
+      targetPort: 53  # Matches the containerPort above
+  type: LoadBalancer
